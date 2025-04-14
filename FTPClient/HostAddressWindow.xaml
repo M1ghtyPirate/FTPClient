@@ -1,14 +1,14 @@
-﻿<Window x:Class="FTPClient.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:FTPClient"
-        mc:Ignorable="d"
-        Title="HostAddressWindow" Height="100" Width="300" SizeToContent="Height"
+﻿<Window x:Class="FTPClient.HostAddressWindow"
+		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:local="clr-namespace:FTPClient"
+		mc:Ignorable="d"
+		Title="HostAddressWindow" Height="100" Width="300" SizeToContent="Height"
 		WindowStartupLocation="CenterOwner">
-    <StackPanel Orientation="Vertical" VerticalAlignment="Center">
-        <TextBox x:Name="HostAddressTextBox" Width="200" Margin="0, 10, 0, 10" TextChanged="HostAddressTextBox_TextChanged" Text="" ToolTip="Адрес FTP сервера"/>
-        <Button x:Name="ConnectButton" Content="Подключение" Width="120" Margin="0, 0, 0, 10" Click="ConnectButton_Click" Loaded="ConnectButton_Loaded"/>
-    </StackPanel>
+	<StackPanel Orientation="Vertical" VerticalAlignment="Center">
+		<TextBox x:Name="HostAddressTextBox" Width="200" Margin="0, 10, 0, 10" TextChanged="HostAddressTextBox_TextChanged" Text="" ToolTip="Адрес FTP сервера"/>
+		<Button x:Name="ConnectButton" Content="Подключение" Width="120" Margin="0, 0, 0, 10" Click="ConnectButton_Click" Loaded="ConnectButton_Loaded"/>
+	</StackPanel>
 </Window>

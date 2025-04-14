@@ -17,94 +17,99 @@ namespace FTPClient;
 /// <summary>
 /// Interaction logic for MainWindow.xaml
 /// </summary>
-public partial class MainWindow : Window {
-    public MainWindow() {
-        InitializeComponent();
-    }
+public partial class HostAddressWindow : Window {
 
-    #region Eventhandlers
+	public HostAddressWindow() {
+		InitializeComponent();
+	}
 
-    private void HostAddressTextBox_TextChanged(object sender, RoutedEventArgs e) {
-        updateButtonAvailiability();
-    }
+	#region Eventhandlers
 
-    private void ConnectButton_Click(object sender, RoutedEventArgs e) {
-        connectToHost();
-    }
+	private void HostAddressTextBox_TextChanged(object sender, RoutedEventArgs e) {
+		updateButtonAvailiability();
+	}
 
-    private void ConnectButton_Loaded(object sender, RoutedEventArgs e) {
-        updateButtonAvailiability();
-    }
+	private void ConnectButton_Click(object sender, RoutedEventArgs e) {
+		connectToHost();
+	}
 
-    #endregion
+	private void ConnectButton_Loaded(object sender, RoutedEventArgs e) {
+		updateButtonAvailiability();
+	}
 
-    #region Methods
+	#endregion
 
-    /// <summary>
-    /// Обновление доступности кнопки подключения
-    /// </summary>
-    private void updateButtonAvailiability() {
-        if (this.HostAddressTextBox == null || this.ConnectButton == null) {
-            return;
-        }
+	#region Methods
 
-        this.ConnectButton.IsEnabled = this.HostAddressTextBox.Text?.Trim().Any() ?? false;
-    }
+	/// <summary>
+	/// Обновление доступности кнопки подключения
+	/// </summary>
+	private void updateButtonAvailiability() {
+		if (this.HostAddressTextBox == null || this.ConnectButton == null) {
+			return;
+		}
 
-    /// <summary>
-    /// Подключение к FTP серверу
-    /// </summary>
-    /// <returns></returns>
-    private void connectToHost() {
-        var hostAddress = this.HostAddressTextBox?.Text?.Trim();
-        if (!(hostAddress?.Any() ?? false)) {
-            return;
-        }
+		this.ConnectButton.IsEnabled = this.HostAddressTextBox.Text?.Trim().Any() ?? false;
+	}
 
-        FtpWebRequest ftpWebRequest = null;
-        try {
-            var uri = new Uri(hostAddress);
-            if (uri.Scheme != Uri.UriSchemeFtp) {
-                throw new Exception();
-            }
-            var baseUri = uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped);
-            ftpWebRequest = (FtpWebRequest)System.Net.FtpWebRequest.Create(baseUri);
-        } catch {
-            Helper.showMessage($"Не удалось создать подключение к FTP серверу <{hostAddress}>", this);
-        }
-        
-        if (ftpWebRequest == null) {
-            return;
-        }
+	/// <summary>
+	/// Подключение к FTP серверу
+	/// </summary>
+	/// <returns></returns>
+	private void connectToHost() {
+		var hostAddress = this.HostAddressTextBox?.Text?.Trim();
+		if (!(hostAddress?.Any() ?? false)) {
+			return;
+		}
 
-        var loginWindow = new LoginWindow();
-        loginWindow.Owner = this;
-        var result = loginWindow.ShowDialog();
-        if (!(result ?? false)) {
-            return;
-        }
+		FtpWebRequest ftpWebRequest = null;
+		string baseUri = null;
+		try {
+			var uri = new Uri(hostAddress);
+			if (uri.Scheme != Uri.UriSchemeFtp) {
+				throw new Exception();
+			}
+			baseUri = uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.Unescaped);
+			ftpWebRequest = (FtpWebRequest)System.Net.FtpWebRequest.Create(baseUri);
+		} catch {
+			Helper.ShowMessage($"Не удалось создать подключение к FTP серверу <{hostAddress}>", this);
+		}
+		
+		if (ftpWebRequest == null) {
+			return;
+		}
 
-        var login = loginWindow.LoginTextBox.Text.Trim();
-        var password = loginWindow.PasswordPasswordBox.Password;
-        var credentials = new NetworkCredential(login, password);
-        ftpWebRequest.Credentials = credentials;
-        ftpWebRequest.Method = WebRequestMethods.Ftp.ListDirectoryDetails;
-        try {
-            var dirList = new List<string>();
-            using (var dirListResponse = ftpWebRequest.GetResponse())
-            using (var dirListStream = dirListResponse.GetResponseStream())
-            using (var dirListReader = new StreamReader(dirListStream)) {
-                while (!dirListReader.EndOfStream) {
-                    dirList.Add(dirListReader.ReadLine());
-                }
-            }
-            Helper.showMessage(string.Join('\n', dirList), this);
-        } catch {
-            Helper.showMessage($"Не удалось запросить список папок.", this);
-            return;
-        }
-        return;
-    }
+		var loginWindow = new LoginWindow();
+		loginWindow.Owner = this;
+		var result = loginWindow.ShowDialog();
+		if (!(result ?? false)) {
+			return;
+		}
 
-    #endregion
+		var login = loginWindow.LoginTextBox.Text.Trim();
+		var password = loginWindow.PasswordPasswordBox.Password;
+		var credentials = new NetworkCredential(login, password);
+		ftpWebRequest.Credentials = credentials;
+		ftpWebRequest.Method = WebRequestMethods.Ftp.ListDirectoryDetails;
+		try {
+			var dirList = new List<string>();
+			using (var dirListResponse = ftpWebRequest.GetResponse())
+			using (var dirListStream = dirListResponse.GetResponseStream())
+			using (var dirListReader = new StreamReader(dirListStream)) {
+				while (!dirListReader.EndOfStream) {
+					dirList.Add(dirListReader.ReadLine());
+				}
+			}
+			//Helper.showMessage(string.Join('\n', dirList), this);
+		} catch {
+			Helper.ShowMessage($"Не удалось запросить список папок.", this);
+			return;
+		}
+
+		var explorerWindow = new ExplorerWindow(baseUri, credentials);
+		explorerWindow.Show();
+		this.Close();
+	}
+
+	#endregion
 }

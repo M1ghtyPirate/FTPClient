@@ -17,13 +17,19 @@ namespace FTPClient {
     /// Interaction logic for MessageWindow.xaml
     /// </summary>
     public partial class MessageWindow : Window {
-        public MessageWindow(string message) {
+        public MessageWindow(string message, bool prompt = false) {
             InitializeComponent();
             this.MessageTextBlock.Text = message;
+            this.CancelButton.Visibility = prompt ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void OKButton_Click(object sender, RoutedEventArgs e) {
             this.DialogResult = true;
+            this.Close();
+        }
+
+        private void CancelButton_Click(object sender, RoutedEventArgs e) {
+            this.DialogResult = false;
             this.Close();
         }
     }

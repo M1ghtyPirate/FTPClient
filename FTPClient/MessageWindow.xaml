@@ -1,16 +1,19 @@
 ﻿<Window x:Class="FTPClient.MessageWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:FTPClient"
-        mc:Ignorable="d"
-        Title="MessageWindow" Height="100" Width="500" SizeToContent="Height" ResizeMode="NoResize"
+		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		xmlns:local="clr-namespace:FTPClient"
+		mc:Ignorable="d"
+		Title="MessageWindow" Height="100" Width="500" SizeToContent="Height" ResizeMode="NoResize"
 		WindowStartupLocation="CenterOwner">
-    <StackPanel Orientation="Vertical" VerticalAlignment="Center">
-        <ScrollViewer MaxHeight="500" Margin="0, 10, 0, 10">
-            <TextBlock x:Name="MessageTextBlock" Width="450" IsEnabled="false" ScrollViewer.VerticalScrollBarVisibility="Visible" TextWrapping="Wrap"/>
-        </ScrollViewer>
-        <Button x:Name="OKButton" Content="OK" Width="120" Margin="0, 0, 0, 10" Click="OKButton_Click"/>
-    </StackPanel>
+	<StackPanel Orientation="Vertical" VerticalAlignment="Center">
+		<ScrollViewer MaxHeight="500" Margin="0, 10, 0, 10">
+			<TextBlock x:Name="MessageTextBlock" Width="450" IsEnabled="false" ScrollViewer.VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"/>
+		</ScrollViewer>
+		<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+			<Button x:Name="OKButton" Content="ОК" Width="120" Margin="10, 0, 10, 10" Click="OKButton_Click"/>
+			<Button x:Name="CancelButton" Content="Отмена" Width="120" Margin="0, 0, 10, 10" Click="CancelButton_Click" Visibility="Collapsed"/>
+		</StackPanel>
+	</StackPanel>
 </Window>
