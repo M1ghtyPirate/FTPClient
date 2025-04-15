@@ -24,13 +24,41 @@
 		<ListView x:Name="HostItemsListView" Grid.Column="0" Grid.Row="2" SelectionChanged="HostItemsListView_SelectionChanged" SelectionMode="Single"/>
 		<Button x:Name="CopyButton" Grid.Column="1" Grid.Row="2" Height="30" Content="&lt;--&gt;" ToolTip="Скопировать элемент" Click="CopyButton_Click" IsEnabled="{Binding CanCopy, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
 		<ListView x:Name="LocalItemsListView" Grid.Column="2" Grid.Row="2" SelectionChanged="LocalItemsListView_SelectionChanged" SelectionMode="Single"/>
-		<!--<ListView x:Name="LocalItemsListView" Grid.Column="2" Grid.Row="1">
-			<ListViewItem Background="Cyan" Content="test	"/>
-		</ListView>-->
 		<StackPanel Grid.Column="3" Grid.Row="2" Orientation="Vertical" VerticalAlignment="Top">
 			<Button x:Name="CreateWorkingDirectoryButton" Margin="0 0 0 10" Content="Создать каталог" ToolTip="Создать рабочий каталог" Click="CreateWorkingDirectoryButton_Click"/>
 			<Button x:Name="DeleteWorkingDirectoryButton" Margin="0 0 0 10" Content="Очистить каталог" ToolTip="Удалить рабочий каталог" Click="DeleteWorkingDirectoryButton_Click"/>
 			<Button x:Name="StopButton" Margin="0 0 0 10" Content="Завершить работу" ToolTip="Завершить работу с сервером" Click="StopButton_Click"/>
 		</StackPanel>
+		<Grid Grid.Row="0" Grid.Column="0" Grid.RowSpan="3" Grid.ColumnSpan="4" Visibility="{Binding LoadingOverlayVisibility, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}">
+			<Grid.RowDefinitions>
+				<RowDefinition  Height="4*"/>
+				<RowDefinition  Height="2*"/>
+				<RowDefinition  Height="4*"/>
+			</Grid.RowDefinitions>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="3*"/>
+				<ColumnDefinition Width="1*"/>
+				<ColumnDefinition Width="0.5*"/>
+				<ColumnDefinition Width="1*"/>
+				<ColumnDefinition Width="0.5*"/>
+				<ColumnDefinition Width="1*"/>
+				<ColumnDefinition Width="3*"/>
+			</Grid.ColumnDefinitions>
+			<Grid.Triggers>
+				<EventTrigger RoutedEvent="Rectangle.Loaded">
+					<BeginStoryboard>
+						<Storyboard Name="waitingAnimation" RepeatBehavior="Forever">
+							<DoubleAnimation Storyboard.TargetName="Dot1" BeginTime="0:0:0.1" Storyboard.TargetProperty="Opacity" From=".1" To="1" AutoReverse="True" Duration="0:0:0.4"/>
+							<DoubleAnimation Storyboard.TargetName="Dot2" BeginTime="0:0:0.2" Storyboard.TargetProperty="Opacity" From=".1" To="1" AutoReverse="True" Duration="0:0:0.4"/>
+							<DoubleAnimation Storyboard.TargetName="Dot3" BeginTime="0:0:0.3" Storyboard.TargetProperty="Opacity" From=".1" To="1" AutoReverse="True" Duration="0:0:0.4"/>
+						</Storyboard>
+					</BeginStoryboard>
+				</EventTrigger>
+			</Grid.Triggers>
+			<Border Background="Black" Opacity=".05" Grid.Column="0" Grid.Row="0" Grid.RowSpan="3" Grid.ColumnSpan="7"/>
+			<Ellipse Name="Dot1" Fill="Black" Opacity=".1" Stretch="Uniform" Grid.Column="1" Grid.Row="1" />
+			<Ellipse Name="Dot2" Fill="Black" Opacity=".1" Stretch="Uniform" Grid.Column="3" Grid.Row="1"/>
+			<Ellipse Name="Dot3" Fill="Black" Opacity=".1" Stretch="Uniform" Grid.Column="5" Grid.Row="1" />
+		</Grid>
 	</Grid>
 </Window>

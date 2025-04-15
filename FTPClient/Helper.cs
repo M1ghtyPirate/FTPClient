@@ -18,6 +18,7 @@ namespace FTPClient {
 		/// <param name="prompt"></param>
 		public static bool ShowMessage(string message, Window owner = null, bool prompt = false) {
 			var messageWindow = new MessageWindow(message);
+			messageWindow.CancelButton.Visibility = prompt ? Visibility.Visible : Visibility.Collapsed;
 			messageWindow.Owner = owner;
 			messageWindow.ShowDialog();
 			return messageWindow.DialogResult ?? false;
@@ -44,6 +45,7 @@ namespace FTPClient {
 				Name = match.Groups[8].Value,
 			};
 			hostItem.IsDirectory = hostItem.Permissions[0] == 'd';
+			hostItem.IsSystemNavigationItem = hostItem.Name == "." || hostItem.Name == "..";
 			//hostItem.IsEditable = 
 			return hostItem;
 		}

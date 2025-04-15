@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -79,6 +80,13 @@ namespace FTPClient {
 		/// </summary>
 		public bool CanCopy { get => _canCopy; set { _canCopy = value; OnPropertyChanged(); } }
 
+		private Visibility _loadingVisibility;
+
+		/// <summary>
+		/// Видимость загрузочного оверлея
+		/// </summary>
+		public Visibility LoadingOverlayVisibility { get => _loadingVisibility; set { _loadingVisibility = value; OnPropertyChanged(); } }
+
 		public event PropertyChangedEventHandler? PropertyChanged;
 
 		public void OnPropertyChanged([CallerMemberName] string propertyName = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -91,6 +99,7 @@ namespace FTPClient {
 
 		public ExplorerWindow(string baseUri, NetworkCredential credentials) {
 			InitializeComponent();
+			LoadingOverlayVisibility = Visibility.Collapsed;
 			BaseUri = baseUri;
 			Credentials = credentials;
 			CurrentHostPath = baseUri;
@@ -104,6 +113,10 @@ namespace FTPClient {
 		#region Eventhandlers
 
 		private void StopButton_Click(object sender, RoutedEventArgs e) {
+			if (!Helper.ShowMessage("Завершить работу?", this, true)) {
+				return;
+			}
+
 			var hostAddressWindow = new HostAddressWindow();
 			hostAddressWindow.Show();
 			this.Close();
@@ -178,7 +191,7 @@ namespace FTPClient {
 		}
 
 		/// <summary>
-		/// ОБновления содержимого текущего каталога сервера
+		/// Обновления содержимого текущего каталога сервера
 		/// </summary>
 		/// <returns></returns>
 		private bool updateHostItems() {
@@ -187,16 +200,8 @@ namespace FTPClient {
 			}
 
 			var ftpWebRequest = getFTPWebRequest(CurrentHostPath, WebRequestMethods.Ftp.ListDirectoryDetails);
-			var dirList = new List<string>();
-			try {
-				using (var dirListResponse = ftpWebRequest.GetResponse())
-				using (var dirListStream = dirListResponse.GetResponseStream())
-				using (var dirListReader = new StreamReader(dirListStream)) {
-					while (!dirListReader.EndOfStream) {
-						dirList.Add(dirListReader.ReadLine());
-					}
-				}
-			} catch {
+			var dirList = executeFTPWebRequest(ftpWebRequest, out var result);
+			if (!result) {
 				Helper.ShowMessage($"Не удалось запросить список папок.", this);
 				return false;
 			}
@@ -216,7 +221,7 @@ namespace FTPClient {
 			var listViewItems = new List<ListViewItem>();
 			foreach (var dir in dirList) { 
 				var hostItem = Helper.ParseHostItem(dir);
-				if (hostItem.Name == "." || hostItem.Name == "..") {
+				if (hostItem.IsSystemNavigationItem) {
 					continue;
 				}
 				var listViewItem = new ListViewItem() { 
@@ -380,72 +385,101 @@ namespace FTPClient {
 			}
 		}
 
+		/// <summary>
+		/// Проверка существования пути на сервере
+		/// </summary>
+		/// <param name="absolutePath"></param>
+		/// <returns></returns>
 		private bool checkIfHostPathExists(string absolutePath) {
 			var ftpWebRequest = getFTPWebRequest(WorkingDirectoryPath, WebRequestMethods.Ftp.ListDirectory);
-			var dirList = new List<string>();
-			try {
-				using (var dirListResponse = ftpWebRequest.GetResponse())
-				using (var dirListStream = dirListResponse.GetResponseStream())
-				using (var dirListReader = new StreamReader(dirListStream)) {
-					while (!dirListReader.EndOfStream) {
-						dirList.Add(dirListReader.ReadLine());
-					}
-				}
-			} catch (Exception ex) {
-				return false;
-			}
-			return true;
+			var dirList = executeFTPWebRequest(ftpWebRequest, out var result);
+			return dirList?.Any() ?? false;
 		}
 
-		private bool removeDirectory(string absolutePath) {
+		/// <summary>
+		/// Удаление директории
+		/// </summary>
+		/// <param name="absolutePath"></param>
+		/// <param name="recurce"></param>
+		/// <returns></returns>
+		private bool removeDirectory(string absolutePath, bool recurce = false) {
+			var result = true;
+			if (recurce) {
+				var dirListRequest = getFTPWebRequest(absolutePath, WebRequestMethods.Ftp.ListDirectoryDetails);
+				var dirList = executeFTPWebRequest(dirListRequest, out var dirListResult);
+				if (!dirListResult) {
+					return false;
+				}
+				var dirItems = dirList?.Select(s => Helper.ParseHostItem(s)).Where(i => !i.IsSystemNavigationItem) ?? Array.Empty<HostItem>();
+				foreach (var dirItem in dirItems) {
+					if (dirItem.IsDirectory) {
+						result &= removeDirectory($"{absolutePath}/{dirItem.Name}", true);
+					} else {
+						var fileDeleteRequest = getFTPWebRequest(absolutePath, WebRequestMethods.Ftp.DeleteFile);
+						executeFTPWebRequest(fileDeleteRequest, out var fileDeleteResult);
+						result &= fileDeleteResult;
+					}
+				}
+			}
 			var deleteRequest = getFTPWebRequest(absolutePath, WebRequestMethods.Ftp.RemoveDirectory);
-			executeFTPWebRequest(deleteRequest, out var result);
+			executeFTPWebRequest(deleteRequest, out var removeResult);
+			result &= removeResult;
 			return result;
 		}
 
+		/// <summary>
+		/// Создание рабочей директории
+		/// </summary>
 		private void createWorkingDirectory() {
 			if (checkIfHostPathExists(WorkingDirectoryPath)) {
-				var promptResult = Helper.ShowMessage("Рабочая папка уже создана. Перезаписать?", this, true);
-				if (!promptResult || !removeDirectory(WorkingDirectoryPath)) {
+				var promptResult = Helper.ShowMessage("Рабочая директорию уже создана. Перезаписать?", this, true);
+				if (!promptResult || !removeDirectory(WorkingDirectoryPath, true)) {
 					return;
 				}
 			}
 
-			var createRequest = getFTPWebRequest(WorkingDirectoryPath, WebRequestMethods.Ftp.MakeDirectory);
-			executeFTPWebRequest(createRequest, out var createResult);
-			if (!createResult) {
-				Helper.ShowMessage($"Не удалось создать папку <{WorkingDirectoryPath}>.");
-			} else {
-				for (var i = 0; i < 10; i++) {
-					var subFolderPath = $"{WorkingDirectoryPath}/{i}";
-					var createSubfolderRequest = getFTPWebRequest(subFolderPath, WebRequestMethods.Ftp.MakeDirectory);
-					executeFTPWebRequest(createSubfolderRequest, out var createSubfolderResult);
-					if (!createSubfolderResult) {
-						Helper.ShowMessage($"Не удалось создать папку <{subFolderPath}>.");
-						continue;
-					}
-					for (var j = 0; j < 8; j++) {
-						var subSubfolderPath = $"{subFolderPath}/{(char)('A' + j)}";
-						var createSubSubfolderRequest = getFTPWebRequest(subSubfolderPath, WebRequestMethods.Ftp.MakeDirectory);
-						executeFTPWebRequest(createSubSubfolderRequest, out var createSubSubfolderResult);
-						if (!createSubSubfolderResult) {
-							Helper.ShowMessage($"Не удалось создать папку <{subSubfolderPath}>.");
+			LoadingOverlayVisibility = Visibility.Visible;
+			Task.Run(() => {
+				var createRequest = getFTPWebRequest(WorkingDirectoryPath, WebRequestMethods.Ftp.MakeDirectory);
+				executeFTPWebRequest(createRequest, out var createResult);
+				if (!createResult) {
+					Dispatcher.Invoke(() => Helper.ShowMessage($"Не удалось создать директорию <{WorkingDirectoryPath}>."));
+				} else {
+					for (var i = 0; i < 10; i++) {
+						var subFolderPath = $"{WorkingDirectoryPath}/{i}";
+						var createSubfolderRequest = getFTPWebRequest(subFolderPath, WebRequestMethods.Ftp.MakeDirectory);
+						executeFTPWebRequest(createSubfolderRequest, out var createSubfolderResult);
+						if (!createSubfolderResult) {
+							Dispatcher.Invoke(() => Helper.ShowMessage($"Не удалось создать директорию <{subFolderPath}>."));
+							continue;
+						}
+						for (var j = 0; j < 8; j++) {
+							var subSubfolderPath = $"{subFolderPath}/{(char)('A' + j)}";
+							var createSubSubfolderRequest = getFTPWebRequest(subSubfolderPath, WebRequestMethods.Ftp.MakeDirectory);
+							executeFTPWebRequest(createSubSubfolderRequest, out var createSubSubfolderResult);
+							if (!createSubSubfolderResult) {
+								Dispatcher.Invoke(() => Helper.ShowMessage($"Не удалось создать директорию <{subSubfolderPath}>."));
+							}
 						}
 					}
 				}
-			}
 
-			if (IsInWorkingDirectory) {
-				changeHostDirectory(BaseUri);
-			} else if (CurrentHostPath == BaseUri) {
-				changeHostDirectory(CurrentHostPath);
-			}
-			Helper.ShowMessage($"Рабочая директория создана <{WorkingDirectoryPath}>.");
+				if (IsInWorkingDirectory) {
+					Dispatcher.Invoke(() => changeHostDirectory(BaseUri));
+				} else if (CurrentHostPath == BaseUri) {
+					Dispatcher.Invoke(() => changeHostDirectory(CurrentHostPath));
+				}
+				LoadingOverlayVisibility = Visibility.Collapsed;
+				Dispatcher.Invoke(() => Helper.ShowMessage($"Рабочая директория создана <{WorkingDirectoryPath}>.", this));
+			});
 		}
 
+		/// <summary>
+		/// Удаление рабочей директории
+		/// </summary>
 		private void removeWorkingDirectory() {
 			if (!checkIfHostPathExists(WorkingDirectoryPath)) {
-				Helper.ShowMessage("Рабочая папка не найдена.");
+				Helper.ShowMessage("Рабочая директория не найдена.", this);
 				return;
 			}
 
@@ -453,12 +487,18 @@ namespace FTPClient {
 			if (!promptResult) {
 				return;
 			}
-			var removeResult = removeDirectory(WorkingDirectoryPath);
-			if (removeResult && IsInWorkingDirectory) {
-				changeHostDirectory(BaseUri);
-			} else if (CurrentHostPath == BaseUri) {
-				changeHostDirectory(CurrentHostPath);
-			}
+
+			LoadingOverlayVisibility = Visibility.Visible;
+			Task.Run(() => {
+				var removeResult = removeDirectory(WorkingDirectoryPath, true);
+				if (IsInWorkingDirectory) {
+					Dispatcher.Invoke(() => changeHostDirectory(BaseUri));
+				} else if (CurrentHostPath == BaseUri) {
+					Dispatcher.Invoke(() => changeHostDirectory(CurrentHostPath));
+				}
+				Dispatcher.Invoke(() => LoadingOverlayVisibility = Visibility.Collapsed);
+				Dispatcher.Invoke(() => Helper.ShowMessage($"Рабочая директория удалена <{WorkingDirectoryPath}>.", this));
+			});
 		}
 
 		#endregion

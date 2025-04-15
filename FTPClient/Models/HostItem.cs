@@ -28,5 +28,7 @@ namespace FTPClient.Models {
 
 		public bool IsEditable { get; set; }
 
+		public bool IsSystemNavigationItem { get; set; }
+
 	}
 }
