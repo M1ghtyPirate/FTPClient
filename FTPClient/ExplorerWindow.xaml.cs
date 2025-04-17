@@ -170,10 +170,10 @@ namespace FTPClient {
 		}
 
 		/// <summary>
-		/// Формирование FTP запроса
+		/// Выполнение запроса со считыванием строк ответа
 		/// </summary>
-		/// <param name="uri"></param>
-		/// <param name="method"></param>
+		/// <param name="ftpWebRequest"></param>
+		/// <param name="result"></param>
 		/// <returns></returns>
 		private List<string> executeFTPWebRequest(FtpWebRequest ftpWebRequest, out bool result) {
 			var responseList = new List<string>();
@@ -389,7 +389,7 @@ namespace FTPClient {
 		}
 
 		/// <summary>
-		/// Проверка существования путь на сервере
+		/// Проверка существования пути на сервере
 		/// </summary>
 		/// <param name="absolutePath"></param>
 		/// <returns></returns>
@@ -444,6 +444,7 @@ namespace FTPClient {
 		/// </summary>
 		/// <returns></returns>
 		private bool copyFile() {
+			// Копирование с сервера
 			if (SelectedItem?.Tag is HostItem) {
 				var hostItem = (HostItem)SelectedItem.Tag;
 				var localFilePath = System.IO.Path.Combine(CurrentLocalPath, hostItem.Name);
@@ -472,6 +473,7 @@ namespace FTPClient {
 					return false;
 				}
 				changeLocalDirectory(CurrentLocalPath);
+			// Копирование на сервер
 			} else if (SelectedItem?.Tag is FileInfo) {
 				var fileInfo = (FileInfo)SelectedItem.Tag;
 				var hostFilePath = $"{CurrentHostPath}/{fileInfo.Name}";

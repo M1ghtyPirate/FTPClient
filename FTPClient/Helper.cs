@@ -24,6 +24,11 @@ namespace FTPClient {
 			return messageWindow.DialogResult ?? false;
 		}
 
+		/// <summary>
+		/// Преобразования строки элемента директории
+		/// </summary>
+		/// <param name="listDirectoryDetailsString"></param>
+		/// <returns></returns>
 		public static HostItem ParseHostItem(string listDirectoryDetailsString) {
 			if (string.IsNullOrWhiteSpace(listDirectoryDetailsString)) {
 				return null;

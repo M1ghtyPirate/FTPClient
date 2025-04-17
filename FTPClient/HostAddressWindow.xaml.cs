@@ -100,7 +100,6 @@ public partial class HostAddressWindow : Window {
 					dirList.Add(dirListReader.ReadLine());
 				}
 			}
-			//Helper.showMessage(string.Join('\n', dirList), this);
 		} catch {
 			Helper.ShowMessage($"Не удалось запросить список папок.", this);
 			return;
