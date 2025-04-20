@@ -214,7 +214,7 @@ namespace FTPClient {
 			if (CurrentHostPath != BaseUri) {
 				var parentDirectoryItem = new ListViewItem() {
 					Content = "..",
-					Tag = new HostItem(),
+					Tag = new HostItem() { IsSystemNavigationItem = true },
 					Background = ParentDirectoryItemBackground
 				};
 				parentDirectoryItem.MouseDoubleClick += (s, e) => changeHostDirectory(CurrentHostPath.Substring(0, CurrentHostPath.LastIndexOf("/")));
@@ -378,7 +378,7 @@ namespace FTPClient {
 					}
 					canWriteToLocalDirectory = writeGranted && !writeDenied;
 				}
-				CanCopy = !(item.Tag as HostItem).IsDirectory && canWriteToLocalDirectory && IsInWorkingDirectory;
+				CanCopy = !(item.Tag as HostItem).IsDirectory && !(item.Tag as HostItem).IsSystemNavigationItem && canWriteToLocalDirectory && IsInWorkingDirectory;
 			} else if (item?.Tag is DirectoryInfo) {
 				CanCopy = false;
 			} else if (item?.Tag is FileInfo) {
@@ -426,10 +426,11 @@ namespace FTPClient {
 				}
 				var dirItems = dirList?.Select(s => Helper.ParseHostItem(s)).Where(i => !i.IsSystemNavigationItem) ?? Array.Empty<HostItem>();
 				foreach (var dirItem in dirItems) {
+					var itemPath = $"{absolutePath}/{dirItem.Name}";
 					if (dirItem.IsDirectory) {
-						result &= removeHostDirectory($"{absolutePath}/{dirItem.Name}", true);
+						result &= removeHostDirectory(itemPath, true);
 					} else {
-						result &= deleteHostFile(absolutePath);
+						result &= deleteHostFile(itemPath);
 					}
 				}
 			}
